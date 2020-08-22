@@ -3,6 +3,7 @@ html
   head
     title Knowledgebase
     link(rel="stylesheet", href="/bower_components/bootstrap/dist/css/bootstrap.css")
+    link(rel="stylesheet", href="/css/style.css")
   body
     nav.navbar.navbar-expand-md.navbar-dark.bg-dark
       a.navbar-brand(href='/') KnowledgeBase
@@ -16,11 +17,16 @@ html
             a.nav-link(href='/articles/add') Add Article
 
     .container
+      != messages('message', locals)
+      if errors
+        each error, i in errors
+          div(class="alert alert-danger") #{error.msg}
       block content
       br
       hr
       footer
         p Copyright &copy; 2020
 
-    script(src="/bower_components/bootstrap/site/docs/4.5/assets/js/vendor/jquery.slim.min.js")
+    script(src="/js/libs/jquery-3.2.1.min.js")
     script(src="/bower_components/bootstrap/dist/js/bootstrap.js")
+    script(src="/js/main.js")
