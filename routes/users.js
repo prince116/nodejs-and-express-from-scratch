@@ -3,6 +3,12 @@ const router = express.Router();
 const { check, oneOf, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const passport = require('passport');
+const csrf = require('csurf');
+var cookieParser = require('cookie-parser')
+
+const csrfProtection = csrf();
+
+router.use(csrfProtection);
 
 // Bring in Article Model
 let User = require('../models/user');
@@ -11,7 +17,8 @@ const { route } = require('./users');
 // Register Form
 router.get('/register', function(req, res){
   res.render('register', {
-    title: 'Register'
+    title: 'Register',
+    csrfToken: req.csrfToken()
   });
 });
 
@@ -64,7 +71,8 @@ router.post('/register', [
 // Login Form
 router.get('/login', function(req, res){
   res.render('login', {
-    title: 'Login'
+    title: 'Login',
+    csrfToken: req.csrfToken()
   });
 });
 
@@ -83,5 +91,17 @@ router.get('/logout', function(req, res){
   req.flash('success', 'You are logged out.');
   res.redirect('/users/login');
 });
+
+router.use(cookieParser())
+router.use(csrf({ cookie: true }))
+
+// error handler
+router.use(function (err, req, res, next) {
+  if (err.code !== 'EBADCSRFTOKEN') return next(err)
+
+  // handle CSRF token errors here
+  res.status(403);
+  res.send('Invalid CSRF Token');
+})
 
 module.exports = router;

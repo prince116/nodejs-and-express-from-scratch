@@ -9,6 +9,6 @@ block content
     #form-group
       label Password:
       input.form-control(name="password", type="password")
-
+    input(type="hidden", name="_csrf", value=csrfToken)
     br
     input.btn.btn-primary(type="submit", value="Submit")
