@@ -11,10 +11,20 @@ html
         span.navbar-toggler-icon
       #navbarsExampleDefault.collapse.navbar-collapse
         ul.navbar-nav.mr-auto
-          li.nav-item.active
-            a.nav-link(href='/') Home
           li.nav-item
-            a.nav-link(href='/articles/add') Add Article
+            a.nav-link(href='/') Home
+          if user
+            li.nav-item
+              a.nav-link(href='/articles/add') Add Article
+        ul.navbar-nav.navbar-right
+          if user
+            li.nav-item
+              a.nav-link(href="/users/logout") Logout
+          else
+            li.nav-item
+              a.nav-link(href="/users/register") Register
+            li.nav-item
+              a.nav-link(href="/users/login") Login
 
     .container
       != messages('message', locals)
@@ -27,6 +37,6 @@ html
       footer
         p Copyright &copy; 2020
 
-    script(src="/js/libs/jquery-3.2.1.min.js")
+    script(src="/bower_components/jquery/dist/jquery.min.js")
     script(src="/bower_components/bootstrap/dist/js/bootstrap.js")
     script(src="/js/main.js")

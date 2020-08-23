@@ -4,9 +4,11 @@ const { check, oneOf, validationResult } = require('express-validator');
 
 // Bring in Article Model
 let Article = require('../models/article');
+// User Model
+let User = require('../models/user');
 
 // Add Route
-router.get('/add', function(req, res){
+router.get('/add', ensureAuthenticated, function(req, res){
   res.render('add_article', {
     title: 'Add Article'
   });
@@ -15,7 +17,7 @@ router.get('/add', function(req, res){
 // Add Submit POST Route
 router.post('/add', [
   check('title', "Title is required").notEmpty(),
-  check('author', "Author is required").notEmpty(),
+  // check('author', "Author is required").notEmpty(),
   check('body', "Body is required").notEmpty()
 ], function(req, res){
 
@@ -29,7 +31,7 @@ router.post('/add', [
 
     let article = new Article();
     article.title = req.body.title;
-    article.author = req.body.author;
+    article.author = req.user._id;
     article.body = req.body.body;
     article.save(function(err){
       if(err){
@@ -46,12 +48,17 @@ router.post('/add', [
 });
 
 // Load Edit Form
-router.get('/edit/:id', function(req, res){
+router.get('/edit/:id', ensureAuthenticated, function(req, res){
   Article.findById(req.params.id, function(err, article){
-    res.render('edit_article', {
-      title: 'Edit Article',
-      article: article
-    });
+    if(article.author != req.user._id){
+      req.flash('danger', 'Not Authorized');
+      res.redirect('/');
+    } else {
+      res.render('edit_article', {
+        title: 'Edit Article',
+        article: article
+      });
+    }
   })
 });
 
@@ -63,36 +70,78 @@ router.post('/edit/:id', function(req, res){
   article.body = req.body.body;
 
   let query = {_id: req.params.id}
+  let options = { upsert: false }
 
-  Article.update(query, article, function(err){
-    if(err){
-      console.log(err);
-      return;
-    } else {
-      req.flash('success', 'Article Updated');
-      res.redirect('/');
-    }
+  Article.updateOne(query, article, options).then(result => {
+    req.flash('success', 'Article Updated');
+    res.redirect('/');
+  }).catch(err => {
+    console.error(`Failed to add review: ${err}`)
+    return;
   });
+
+  // Old style
+  // Article.update(query, article, function(err){
+  //   if(err){
+  //     console.log(err);
+  //     return;
+  //   } else {
+  //     req.flash('success', 'Article Updated');
+  //     res.redirect('/');
+  //   }
+  // });
 });
 
 router.delete('/:id', function(req, res){
+
+  if(!req.user._id){
+    res.status(500).send();
+  }
+
   let query = {_id: req.params.id}
 
-  Article.remove(query, function(err){
-    if(err){
-      console.log(err)
+  Article.findById(req.params.id, function(err, article){
+    if(article.author != req.user._id){
+      res.status(500).send();
+    } else {
+      Article.deleteOne(query).then(result => {
+        res.send('Success');
+      }).catch(err => {
+        console.log(err)
+      })
     }
-    res.send('Success');
   });
+
+
+  // Old Style
+  // Article.remove(query, function(err){
+  //   if(err){
+  //     console.log(err)
+  //   }
+  //   res.send('Success');
+  // });
 });
 
 // Get Single Article
 router.get('/:id', function(req, res){
   Article.findById(req.params.id, function(err, article){
-    res.render('article', {
-      article: article
-    });
+    User.findById(article.author, function(err, user){
+      res.render('article', {
+        article: article,
+        author: user.name
+      });
+    })
   })
 });
+
+// Access control
+function ensureAuthenticated(req, res, next){
+  if(req.isAuthenticated()){
+    return next();
+  } else {
+    req.flash('danger', 'Please login');
+    res.redirect('/users/login');
+  }
+}
 
 module.exports = router;
